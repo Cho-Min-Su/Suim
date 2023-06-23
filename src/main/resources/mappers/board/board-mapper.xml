@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="boardMapper">
+
+	<!-- BOARD 테이블로부터 조회된 ResultSet 을 Board 객체로 가공해주는 resultMap -->
+	<resultMap id="boardResultSet" type="board">
+		<result column="BOARD_NO" property="boardNo" />
+		<result column="BOARD_TITLE" property="boardTitle" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="BOARD_VIEW" property="boardView" />
+		<result column="BOARD_DATE" property="boardDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="NICKNAME" property="nickName" />
+		
+		<result column="BOARD_CONTENT" property="boardContent" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="BOARD_REPLY_COUNT" property="replyCount" />
+		<result column="THUMBNAIL" property="thumbnail" />
+	</resultMap>
+	
+		<!-- REPLY 테이블로부터 조회된 ResultSet 을 Reply 객체로 가공해주는 resultMap -->
+	<resultMap id="replyResultSet" type="reply">
+		<result column="BRE_NO" property="breNo" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="BRE_CONTENT" property="breContent" />
+		<result column="BRE_DATE" property="breDate" />
+		<result column="BRE_ID" property="breId" />
+	</resultMap>
+	
+		<!-- FIND 테이블로부터 조회된 ResultSet 을 Find 객체로 가공해주는 resultMap -->
+	<resultMap id="findResultSet" type="find">
+		<result column="FIND_NO" property="findNo" />
+		<result column="FIND_TITLE" property="findTitle" />
+		<result column="FIND_CATEGORY" property="category" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="FIND_VIEW" property="findView" />
+		<result column="FIND_DATE" property="findDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="NICKNAME" property="nickName" />
+		<result column="GENDER" property="gender" />
+    
+		<result column="FIND_CONTENT" property="findContent" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="FIND_REPLY_COUNT" property="freplyCount" />
+		<result column="THUMBNAIL" property="thumbnail" />
+	</resultMap>
+	
+	  <!-- FINDREPLY 테이블로부터 조회된 ResultSet 을 Reply 객체로 가공해주는 resultMap -->
+	<resultMap id="findreplyResultSet" type="findreply">
+		<result column="FRE_NO" property="freNo" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="FRE_CONTENT" property="freContent" />
+		<result column="FRE_DATE" property="freDate" />
+		<result column="FRE_ID" property="freId" />
+		<result column="FIND_NO" property="findNo" />
+
+	</resultMap>
+	
+		<!-- INREVIEW 테이블로부터 조회된 ResultSet 을 InReview 객체로 가공해주는 resultMap -->
+
+	<resultMap id="InReviewResultSet" type="inreview">
+
+    <result column="INR_NO" property="inrNo" />
+    <result column="INR_TITLE" property="inrTitle" />
+    <result column="MEMBER_ID" property="memberId" />
+    <result column="INR_VIEW" property="inrView" />
+    <result column="INR_DATE" property="inrDate" />
+    <result column="ORIGIN_NAME" property="originName" />
+    <result column="NICKNAME" property="nickName" />
+    <result column="INR_CONTENT" property="inrContent" />
+    <result column="CHANGE_NAME" property="changeName" />
+    <result column="THUMBNAIL" property="thumbnail" />
+
+
+	</resultMap>
+	 <!-- INREVIEWREPLY 테이블로부터 조회된 ResultSet 을 INREVIEW 객체로 가공해주는 resultMap -->
+	<resultMap id="inReviewReplyResultSet" type="inreviewreply">
+	
+		<result column="IRE_NO" property="ireNo" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="IRE_CONTENT" property="ireContent" />
+		<result column="IRE_DATE" property="ireDate" />
+		<result column="IRE_ID" property="ireId" />
+		<result column="INR_NO" property="inrNo" />
+
+
+	</resultMap>
+	
+
+
+		<!-- 게시글 총 갯수 구하는 쿼리문 -->
+	<select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		  FROM BOARD
+		 WHERE STATUS = 'Y'
+	</select>
+	
+	<!-- 게시글 리스트를 구해주는 쿼리문 -->
+		<select id="selectList" resultMap="boardResultSet">
+			SELECT
+			    B.BOARD_NO,
+			    B.BOARD_TITLE,
+			    B.BOARD_CONTENT,
+			    B.BOARD_VIEW,
+			    B.BOARD_DATE,
+			    B.STATUS,
+			    B.MEMBER_ID,
+			    M.NICKNAME,
+			    BA.ORIGIN_NAME,
+			    BA.CHANGE_NAME,
+			    COUNT(CASE WHEN BR.STATUS = 'Y' THEN BR.BRE_NO END) AS BOARD_REPLY_COUNT,
+			    REGEXP_SUBSTR(B.BOARD_CONTENT, '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+			FROM BOARD B
+			JOIN MEMBER M ON (M.MEMBER_ID = B.MEMBER_ID)
+			LEFT JOIN BATTACHMENT BA ON (BA.BOARD_NO = B.BOARD_NO)
+			LEFT JOIN BOARD_REPLY BR ON (BR.BOARD_NO = B.BOARD_NO)
+			WHERE B.STATUS = 'Y'
+			GROUP BY
+			    B.BOARD_NO,
+			    B.BOARD_TITLE,
+			    B.BOARD_CONTENT,
+			    B.BOARD_VIEW,
+			    B.BOARD_DATE,
+			    B.STATUS,
+			    B.MEMBER_ID,
+			    M.NICKNAME,
+			    BA.ORIGIN_NAME,
+			    BA.CHANGE_NAME
+			ORDER BY B.BOARD_NO DESC
+		</select>
+		
+			<!-- 베스트 게시글 리스트를 구해주는 쿼리문 -->
+		<select id="selectbList" resultMap="boardResultSet">
+
+				SELECT
+				    B.BOARD_NO,
+				    B.BOARD_TITLE,
+				    B.BOARD_CONTENT,
+				    B.BOARD_VIEW,
+				    B.BOARD_DATE,
+				    B.STATUS,
+				    B.MEMBER_ID,
+				    BA.ORIGIN_NAME,
+				    BA.CHANGE_NAME,
+				    COUNT(CASE WHEN BR.STATUS = 'Y' THEN BR.BRE_NO END) AS BOARD_REPLY_COUNT
+				FROM BOARD B
+				JOIN MEMBER M ON (M.MEMBER_ID = B.MEMBER_ID)
+				LEFT JOIN BATTACHMENT BA ON (BA.BOARD_NO = B.BOARD_NO)
+				LEFT JOIN BOARD_REPLY BR ON (BR.BOARD_NO = B.BOARD_NO)
+				WHERE B.STATUS = 'Y'
+				GROUP BY
+				    B.BOARD_NO,
+				    B.BOARD_TITLE,
+				    B.BOARD_CONTENT,
+				    B.BOARD_VIEW,
+				    B.BOARD_DATE,
+				    B.STATUS,
+				    B.MEMBER_ID,
+				    BA.ORIGIN_NAME,
+				    BA.CHANGE_NAME
+				ORDER BY B.BOARD_VIEW DESC
+	
+		</select>
+		
+		
+		
+	
+		<!-- 게시글 작성용 쿼리문 -->
+	<insert id="insertBoard" parameterType="board">
+		    INSERT INTO BOARD (
+			        BOARD_NO,
+			        BOARD_TITLE,
+			        BOARD_CONTENT,
+			        BOARD_VIEW,
+			        BOARD_DATE,
+			        STATUS,
+			        MEMBER_ID
+			    )
+			    VALUES (
+			        SEQ_BNO.NEXTVAL,
+			        #{boardTitle},
+			        #{boardContent},
+			        DEFAULT,
+			        DEFAULT,
+			        DEFAULT,
+			        #{memberId}
+			    )
+		
+	</insert>
+	
+		<!-- 게시글 파일첨부 쿼리문 -->
+	<insert id="battachment" parameterType="battachment">
+		INSERT INTO BATTACHMENT (BAT_NO, 
+		                        ORIGIN_NAME, 
+		                        CHANGE_NAME, 
+		                        CREATE_DATE, 
+		                        FILE_STATUS, 
+		                        BOARD_NO)
+		VALUES (SEQ_BAT_NO.NEXTVAL, 
+		        #{originName}, 
+		        #{changeName},
+		        DEFAULT, 
+		        DEFAULT, 
+		        #{boardNo})
+	</insert>
+		
+	<select id="selectBoard" parameterType="_int" resultMap="boardResultSet">
+		SELECT
+		    B.BOARD_NO,
+		    B.BOARD_TITLE,
+		    B.BOARD_CONTENT,
+		    B.BOARD_VIEW,
+		    B.BOARD_DATE,
+		    B.STATUS,
+		    B.MEMBER_ID,
+		    BA.ORIGIN_NAME,
+		    BA.CHANGE_NAME,
+		    M.NICKNAME,
+		    COUNT(BR.BRE_NO) AS BOARD_REPLY_COUNT,
+		    REGEXP_SUBSTR(B.BOARD_CONTENT, '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+		FROM BOARD B
+		JOIN MEMBER M ON (M.MEMBER_ID = B.MEMBER_ID)
+		LEFT JOIN BATTACHMENT BA ON (BA.BOARD_NO = B.BOARD_NO)
+		LEFT JOIN BOARD_REPLY BR ON (BR.BOARD_NO = B.BOARD_NO)
+		WHERE B.BOARD_NO = #{boardNo}
+		AND B.STATUS = 'Y'
+		GROUP BY
+		    B.BOARD_NO,
+		    B.BOARD_TITLE,
+		    B.BOARD_CONTENT,
+		    B.BOARD_VIEW,
+		    B.BOARD_DATE,
+		    B.STATUS,
+		    B.MEMBER_ID,
+		    BA.ORIGIN_NAME,
+		    M.NICKNAME,
+		    BA.CHANGE_NAME
+		ORDER BY B.BOARD_NO DESC
+	</select>
+	
+	<update id="increaseCount" parameterType="_int">
+		UPDATE BOARD
+		   SET BOARD_VIEW = BOARD_VIEW + 1
+		 WHERE BOARD_NO = #{boardNo}
+		   AND STATUS = 'Y'
+	</update>
+	
+	<update id="deleteBoard" parameterType="_int">
+		UPDATE BOARD
+		   SET STATUS = 'N'
+		 WHERE BOARD_NO = #{boardNo}
+	</update>
+	
+	
+		
+
+ 	<select id="selectReplyList" parameterType="_int" resultMap="replyResultSet">
+			SELECT
+			    BR.BRE_NO,
+			    BR.BRE_CONTENT,
+			    BR.BRE_DATE,
+			    BR.STATUS,
+			    BR.BOARD_NO,
+			    BR.BRE_ID,
+			    M.NICKNAME,
+			    M.MEMBER_ID
+			FROM
+			    BOARD_REPLY BR
+			JOIN
+			    MEMBER M ON (M.MEMBER_ID = BR.BRE_ID)
+			WHERE
+			    BR.STATUS = 'Y'
+			    AND BR.BOARD_NO = #{boardNo}
+			ORDER BY
+			    BR.BRE_NO DESC
+	</select>
+
+
+	<insert id="insertReply" parameterType="reply">
+		INSERT INTO BOARD_REPLY(BRE_NO
+						, BRE_CONTENT
+						, BOARD_NO
+						, BRE_ID
+						)
+				   VALUES(SEQ_BRE_NO.NEXTVAL
+				   		, #{breContent}
+				   		, #{boardNo}
+				   		, #{memberId}
+				   		)
+	</insert> 
+	
+	<select id="ReplyCount" resultType="_int">
+			  SELECT COUNT(*)
+			  FROM BOARD_REPLY
+			 WHERE STATUS = 'Y'
+	         AND BOARD_NO = #{boardNo}
+	</select>
+	
+	<update id="deleteReply" parameterType="_int">
+		UPDATE BOARD_REPLY
+		   SET STATUS = 'N'
+		 WHERE BRE_NO = #{breNo}
+	</update>
+	
+		<update id="updateReply" parameterType="reply">
+		UPDATE BOARD_REPLY
+		   SET BRE_CONTENT = #{content}
+		 WHERE BRE_NO = #{bre}
+		</update>
+	
+		<!-- 게시글 리스트를 구해주는 쿼리문 -->
+			<select id="selectfList" parameterType="hashmap" resultMap="findResultSet">
+				    SELECT
+				        F.FIND_NO,
+				        F.FIND_TITLE,
+				        F.FIND_CONTENT,
+				        F.FIND_CATEGORY,
+				        F.FIND_VIEW,
+				        F.FIND_DATE,
+				        F.STATUS,
+				        F.MEMBER_ID,
+				        M.NICKNAME,
+				        M.GENDER,
+				        FA.ORIGIN_NAME,
+				        FA.CHANGE_NAME,
+				        COUNT(CASE WHEN FR.STATUS = 'Y' THEN FR.FRE_NO END) AS FIND_REPLY_COUNT,
+				        REGEXP_SUBSTR(F.FIND_CONTENT, '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+				    FROM FIND F
+				    JOIN MEMBER M ON (M.MEMBER_ID = F.MEMBER_ID)
+				    LEFT JOIN FATTACHMENT FA ON (FA.FIND_NO = F.FIND_NO)
+				    LEFT JOIN FIND_REPLY FR ON (FR.FIND_NO = F.FIND_NO)
+				    WHERE F.STATUS = 'Y'
+				    
+				    <choose>
+				        <when test='gender == "M"'>
+				            AND M.GENDER = 'M'
+				        </when>    
+				        <when test='gender == "F"'>
+				            AND M.GENDER = 'F'
+				        </when>
+				        <otherwise>
+				            AND M.GENDER IN ('M', 'F')
+				        </otherwise>
+				    </choose>
+				    
+				    <choose>
+				        <when test="category == '방구해요'">
+				            AND F.FIND_CATEGORY = '방구해요'
+				        </when>
+				        <when test="category == '세놓아요'">
+				            AND F.FIND_CATEGORY = '세놓아요'
+				        </when>
+				        <otherwise>
+				            AND F.FIND_CATEGORY IN ('방구해요', '세놓아요')
+				        </otherwise>
+				    </choose>
+				    
+				    <!-- 제목검색 시 -->
+				    AND F.FIND_TITLE LIKE '%' || #{search} || '%'
+				    
+				    GROUP BY
+				        F.FIND_NO,
+				        F.FIND_TITLE,
+				        F.FIND_CONTENT,
+				        F.FIND_CATEGORY,
+				        F.FIND_VIEW,
+				        F.FIND_DATE,
+				        F.STATUS,
+				        F.MEMBER_ID,
+				        M.NICKNAME,
+				        M.GENDER,
+				        FA.ORIGIN_NAME,
+				        FA.CHANGE_NAME
+				    ORDER BY F.FIND_NO DESC
+				</select>
+
+		
+		<update id="updateBoard" parameterType="board">
+		  UPDATE BOARD
+		  SET BOARD_TITLE = #{boardTitle},
+		      BOARD_CONTENT = #{boardContent}
+		  WHERE BOARD_NO = #{boardNo}
+		  AND STATUS = 'Y'
+		</update>
+		
+				<!-- 사람구하기 게시글 총 갯수 구하는 쿼리문 (조건 추가) -->
+	<select id="selectfListCount" resultType="_int" parameterType="hashmap">
+		SELECT COUNT(*)
+		  FROM FIND F
+          JOIN MEMBER M ON (M.MEMBER_ID = F.MEMBER_ID)
+		  WHERE F.STATUS = 'Y'
+		  <choose>
+			<when test='gender == "M"'>
+	            AND M.GENDER = 'M'
+	        </when>    
+	        <when test='gender == "F"'>
+	            AND M.GENDER = 'F'
+	        </when>
+	        <otherwise>
+	            AND M.GENDER IN ('M', 'F')
+	        </otherwise>
+	    </choose>
+	    
+	    <choose>
+	        <when test="category == '방구해요'">
+	            AND F.FIND_CATEGORY = '방구해요'
+	        </when>
+	        <when test="category == '세놓아요'">
+	            AND F.FIND_CATEGORY = '세놓아요'
+	        </when>
+	        <otherwise>
+	            AND F.FIND_CATEGORY IN ('방구해요', '세놓아요')
+	        </otherwise>
+	    </choose>
+	</select>
+	
+	
+	<select id="selectFind" parameterType="_int" resultMap="findResultSet">
+
+			SELECT
+			    F.FIND_NO,
+			    F.FIND_TITLE,
+			    F.FIND_CONTENT,
+			    F.FIND_CATEGORY,
+			    F.FIND_VIEW,
+			    F.FIND_DATE,
+			    F.STATUS,
+			    F.MEMBER_ID,
+			    M.NICKNAME,
+
+			    FA.ORIGIN_NAME,
+			    FA.CHANGE_NAME,
+			    COUNT(CASE WHEN FR.STATUS = 'Y' THEN FR.FRE_NO END) AS FIND_REPLY_COUNT,
+			    REGEXP_SUBSTR(F.FIND_CONTENT, '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+			FROM FIND F
+			JOIN MEMBER M ON (M.MEMBER_ID = F.MEMBER_ID)
+			LEFT JOIN FATTACHMENT FA ON (FA.FIND_NO = F.FIND_NO)
+			LEFT JOIN FIND_REPLY FR ON (FR.FIND_NO = F.FIND_NO)
+
+			WHERE F.FIND_NO = #{findNo}
+			AND F.STATUS = 'Y'
+
+			GROUP BY
+			    F.FIND_NO,
+			    F.FIND_TITLE,
+			    F.FIND_CONTENT,
+			    F.FIND_CATEGORY,
+			    F.FIND_VIEW,
+			    F.FIND_DATE,
+			    F.STATUS,
+			    F.MEMBER_ID,
+			    M.NICKNAME,
+
+			    FA.ORIGIN_NAME,
+			    FA.CHANGE_NAME
+			ORDER BY F.FIND_NO DESC
+
+	</select>
+	
+	<update id="increasefCount" parameterType="_int">
+		UPDATE FIND
+		   SET FIND_VIEW = FIND_VIEW + 1
+		 WHERE FIND_NO = #{findNo}
+		   AND STATUS = 'Y'
+	</update>
+	
+	<update id="deleteFind" parameterType="_int">
+		UPDATE FIND
+		   SET STATUS = 'N'
+		 WHERE FIND_NO = #{findNo}
+	</update>
+	
+	 	<select id="selectfReplyList" parameterType="_int" resultMap="findreplyResultSet">
+			SELECT 
+			    FR.FRE_NO,
+			    FR.FRE_CONTENT,
+			    FR.FRE_DATE,
+			    FR.STATUS,
+			    FR.FIND_NO,
+			    FR.FRE_ID,
+			    M.NICKNAME,
+			    M.MEMBER_ID
+			FROM 
+			    FIND_REPLY FR
+			JOIN 
+			    MEMBER M ON (M.MEMBER_ID = FR.FRE_ID)
+			WHERE 
+			    FR.STATUS = 'Y'
+			    AND FR.FIND_NO = #{findNo}
+			ORDER BY 
+			    FR.FRE_NO DESC
+		</select>
+
+
+	<insert id="insertfReply" parameterType="findreply">
+		INSERT INTO FIND_REPLY(FRE_NO
+						, FRE_CONTENT
+						, FIND_NO
+						, FRE_ID
+						)
+				   VALUES(SEQ_FRE_NO.NEXTVAL
+				   		, #{freContent}
+				   		, #{findNo}
+				   		, #{memberId}
+				   		)
+	</insert> 
+	
+		<update id="deletefReply" parameterType="_int">
+		UPDATE FIND_REPLY
+		   SET STATUS = 'N'
+		 WHERE FRE_NO = #{freNo}
+	</update>
+	
+		<update id="updatefReply" parameterType="find">
+		UPDATE FIND_REPLY
+		   SET FRE_CONTENT = #{content}
+		 WHERE FRE_NO = #{fre}
+		</update>
+	
+	
+	
+	<select id="findReplyCount" resultType="_int">
+			  SELECT COUNT(*)
+			  FROM FIND_REPLY
+			 WHERE STATUS = 'Y'
+	         AND BOARD_NO = #{findNo}
+	</select>
+	
+			<!-- 게시글 작성용 쿼리문 -->
+	<insert id="insertFind" parameterType="find">
+		    INSERT INTO FIND (
+			        FIND_NO,
+			        FIND_TITLE,
+			        FIND_CONTENT,
+			        FIND_CATEGORY,
+			        FIND_VIEW,
+			        FIND_DATE,
+			        STATUS,
+			        MEMBER_ID
+			    )
+			    VALUES (
+			        SEQ_FIND_NO.NEXTVAL,
+			        #{findTitle},
+			        #{findContent},
+			        #{category},
+			        DEFAULT,
+			        DEFAULT,
+			        DEFAULT,
+			        #{memberId}
+			    )
+		
+	</insert>
+	
+		<update id="updateFind" parameterType="find">
+		  UPDATE FIND
+		  SET FIND_TITLE = #{findTitle},
+		      FIND_CONTENT = #{findContent},
+		      FIND_CATEGORY = #{category}
+		  WHERE FIND_NO = #{findNo}
+		  AND STATUS = 'Y'
+		</update>
+
+		
+		
+		<update id="increaseiCount" parameterType="_int">
+		UPDATE INREVIEW
+		   SET INR_VIEW = INR_VIEW + 1
+		 WHERE INR_NO = #{inrNo}
+		   AND STATUS = 'Y'
+	</update>
+		
+		
+
+		<!-- 게시글 리스트를 구해주는 쿼리문 -->
+		<select id="selectiList" resultMap="InReviewResultSet">
+		    SELECT
+		        I.INR_NO,
+		        I.INR_TITLE,
+		        I.INR_CONTENT,
+		        I.INR_VIEW,
+		        I.INR_DATE,
+		        I.STATUS,
+		        I.MEMBER_ID,
+		        M.NICKNAME,
+		        M.MEMBER_ID,
+		        IA.ORIGIN_NAME,
+		        IA.CHANGE_NAME,
+		        REGEXP_SUBSTR(I.INR_CONTENT, '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+		    FROM INREVIEW I
+		    JOIN MEMBER M ON (M.MEMBER_ID = I.MEMBER_ID)
+		    LEFT JOIN IATTACHMENT IA ON (IA.INR_NO = I.INR_NO)
+		    WHERE I.STATUS = 'Y'
+		    GROUP BY
+		        I.INR_NO,
+		        I.INR_TITLE,
+		        I.INR_CONTENT,
+		        I.INR_VIEW,
+		        I.INR_DATE,
+		        I.STATUS,
+		        I.MEMBER_ID,
+		        M.NICKNAME,
+		        M.MEMBER_ID,
+		        IA.ORIGIN_NAME,
+		        IA.CHANGE_NAME
+		    ORDER BY I.INR_NO DESC
+		</select>
+		
+		
+	<update id="increaseInCount" parameterType="_int">
+		UPDATE INREVIEW
+		   SET INR_VIEW = INR_VIEW + 1
+		 WHERE INR_NO = #{inrNo}
+		   AND STATUS = 'Y'
+	</update>
+	
+	<select id="selectInReview" parameterType="_int" resultMap="InReviewResultSet">
+
+SELECT
+    I.INR_NO,
+    I.INR_TITLE,
+    I.INR_CONTENT,
+    I.INR_VIEW,
+    I.INR_DATE,
+    I.STATUS,
+    I.MEMBER_ID,
+    M.NICKNAME,
+    M.MEMBER_ID,
+    IA.ORIGIN_NAME,
+    IA.CHANGE_NAME,
+    REGEXP_SUBSTR(TO_CLOB(I.INR_CONTENT), '&lt;img[^&gt;]+src\s*=\s*"([^"]+)"', 1, 1, NULL, 1) AS THUMBNAIL
+FROM INREVIEW I
+JOIN MEMBER M ON (M.MEMBER_ID = I.MEMBER_ID)
+LEFT JOIN IATTACHMENT IA ON (IA.INR_NO = I.INR_NO)
+WHERE I.INR_NO = #{inrNo}
+    AND I.STATUS = 'Y'
+GROUP BY
+    I.INR_NO,
+    I.INR_TITLE,
+    I.INR_CONTENT,
+    I.INR_VIEW,
+    I.INR_DATE,
+    I.STATUS,
+    I.MEMBER_ID,
+    M.NICKNAME,
+    M.MEMBER_ID,
+    IA.ORIGIN_NAME,
+    IA.CHANGE_NAME
+ORDER BY I.INR_NO DESC
+
+
+
+	</select>
+	
+	<update id="deleteInReview" parameterType="_int">
+		UPDATE INREVIEW
+		   SET STATUS = 'N'
+		 WHERE INR_NO = #{inrNo}
+	</update>
+	
+		<insert id="insertInReview" parameterType="inreview">
+		    INSERT INTO INREVIEW (
+			        INR_NO,
+			        INR_TITLE,
+			        INR_CONTENT,
+			        INR_VIEW,
+			        INR_DATE,
+			        STATUS,
+			        MEMBER_ID
+			    )
+			    VALUES (
+			        SEQ_INR_NO.NEXTVAL,
+			        #{inrTitle},
+			        #{inrContent},
+			        DEFAULT,
+			        DEFAULT,
+			        DEFAULT,
+			        #{memberId}
+			    )
+		
+	</insert>
+	
+	<update id="updateInReivew" parameterType="inreview">
+		  UPDATE INREVIEW
+		  SET INR_TITLE = #{inrTitle},
+		      INR_CONTENT = #{inrContent}
+		  WHERE INR_NO = #{inrNo}
+		  AND STATUS = 'Y'
+	</update>
+	
+		<select id="selectInReviewReplyList" parameterType="_int" resultMap="inReviewReplyResultSet">
+			SELECT 
+			    IR.IRE_NO,
+			    IR.IRE_CONTENT,
+			    IR.IRE_DATE,
+			    IR.STATUS,
+			    IR.INR_NO,
+			    IR.IRE_ID,
+			    M.NICKNAME,
+			    M.MEMBER_ID
+			FROM 
+			    INREVIEW_REPLY IR
+			JOIN 
+			    MEMBER M ON (M.MEMBER_ID = IR.IRE_ID)
+			WHERE 
+			    IR.STATUS = 'Y'
+			    AND IR.INR_NO = #{inrNo}
+			ORDER BY 
+			    IR.IRE_NO DESC
+		</select>
+
+
+	<insert id="insertInReviewReply" parameterType="inreviewreply">
+		INSERT INTO INREVIEW_REPLY(IRE_NO
+						, IRE_CONTENT
+						, INR_NO
+						, IRE_ID
+						)
+				   VALUES(SEQ_INR_RE.NEXTVAL
+				   		, #{ireContent}
+				   		, #{inrNo}
+				   		, #{memberId}
+				   		)
+	</insert> 
+	
+	
+	<update id="updateiReply" parameterType="inreview">
+		UPDATE INREVIEW_REPLY
+		   SET IRE_CONTENT = #{content}
+		 WHERE IRE_NO = #{ireNo}
+	</update>
+	
+	<update id="deleteiReply" parameterType="_int">
+		UPDATE INREVIEW_REPLY
+		   SET STATUS = 'N'
+		 WHERE IRE_NO = #{ireNo}
+	</update>
+	
+	
+
+		<select id="selectiListCount" resultType="_int">
+		SELECT COUNT(*)
+		  FROM INREVIEW
+		 WHERE STATUS = 'Y'
+	</select>
+
+	
+		
+		<select id="selectfcListCount" resultType="_int">
+		SELECT COUNT(*)
+	    FROM FIND F
+	    JOIN MEMBER M ON (M.MEMBER_ID = F.MEMBER_ID)
+	    WHERE F.STATUS = 'Y'
+				    
+				    <choose>
+				        <when test='gender == "M"'>
+				            AND M.GENDER = 'M'
+				        </when>    
+				        <when test='gender == "F"'>
+				            AND M.GENDER = 'F'
+				        </when>
+				        <otherwise>
+				            AND M.GENDER IN ('M', 'F')
+				        </otherwise>
+				    </choose>
+				    
+				    <choose>
+				        <when test="category == '방구해요'">
+				            AND F.FIND_CATEGORY = '방구해요'
+				        </when>
+				        <when test="category == '세놓아요'">
+				            AND F.FIND_CATEGORY = '세놓아요'
+				        </when>
+				        <otherwise>
+				            AND F.FIND_CATEGORY IN ('방구해요', '세놓아요')
+				        </otherwise>
+				    </choose>
+				    
+				    <!-- 제목검색 시 -->
+				    AND F.FIND_TITLE LIKE '%' || #{search} || '%'
+
+				    ORDER BY F.FIND_NO DESC
+
+	
+			</select>
+	
+	
+
+	
+	
+  
+  
+</mapper>

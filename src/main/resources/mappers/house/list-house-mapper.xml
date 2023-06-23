@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="listHouseMapper">
+  	
+  	<resultMap id="houseResultMap" type="house">
+	    <result column="HOUSE_NO" property="houseNo"/>
+	    <result column="HOUSE_NAME" property="houseName"/>
+	    <result column="HOUSE_ADDRESS" property="houseAddress"/>
+	    <result column="DEPOSIT" property="deposit"/>
+	    <result column="RENT" property="rent"/>
+	    <result column="ENTER_DATE" property="enterDate"/>
+	    <result column="MAX_ENTER_DATE"  property="maxEnterDate"/>
+	    <result column="MIN_STAY" property="minStay"/>
+	    <result column="MAX_STAY" property="maxStay"/>
+	    <result column="ROOM_PEOPLE" property="roomPeople"/>
+	    <result column="INC_FURNITURE" property="incFurniture"/>
+	    <result column="HOUSE_CONTENT" property="houseContent"/>
+	    <result column="RES_GENDER" property="resGender"/>
+	    <result column="RES_TYPE" property="resType"/>
+	    <result column="FLOOR" property="floor"/>
+	    <result column="HOUSE_STATUS" property="houseStatus"/>
+	    <result column="HOUSE_DATE" property="houseDate"/>
+	    <result column="MEMBER_ID" property="memberId"/>
+	   	<result column="CHANGE_NAME" property="changeName"/>
+	   	<result column="ENROLL_STATUS" property="enrollStatus"/> 
+	   	<result column="LONGITUDE" property="longitude"/> 	
+	  	<result column="LATITUDE" property="latitude"/>
+	</resultMap>
+	
+	<resultMap id="regionResultMap" type="com.suim.house.model.vo.Region">
+		<result column="LATITUDE" property="latitude"/>
+		<result column="LONGITUDE" property="longitude"/>
+	</resultMap>
+	
+	<resultMap id="reservationResultMap" type="reservation">
+		<result column="REZ_NO" property="rezNo"/>
+		<result column="REZ_DATE" property="rezDate"/>
+		<result column="REZ_HOUR" property="rezHour"/>
+		<result column="SEND_MEMBER_ID" property="sendMemberId"/>
+		<result column="REC_MEMBER_ID" property="recMemberId"/>
+		<result column="REZ_STATUS" property="rezStatus"/>
+		<result column="REZ_REQUEST_DATE" property="rezRequestDate"/>
+		<result column="CANCEL_CONTENT" property="cancelContent"/>
+		<result column="DEL_STATUS" property="delStatus"/>
+		<result column="HOUSE_NO" property="houseNo"/>
+		<result column="HOUSE_NAME" property="houseName"/>
+		<result column="NICKNAME" property="nickName"/>
+	</resultMap>
+	
+
+	<!-- 지도와 셰어하우스 리스트 상세 검색  -->
+	<select id="selectList" resultMap="houseResultMap">
+	   SELECT h.HOUSE_NO, h.HOUSE_NAME, h.HOUSE_ADDRESS, h.DEPOSIT, h.RENT, h.ENTER_DATE, h.MAX_ENTER_DATE, h.MIN_STAY, h.MAX_STAY, h.ROOM_PEOPLE, h.INC_FURNITURE, h.HOUSE_CONTENT, h.RES_GENDER, h.RES_TYPE, h.FLOOR, h.HOUSE_STATUS, h.HOUSE_DATE, h.MEMBER_ID, p.CHANGE_NAME
+	    FROM HOUSE h
+	    JOIN PHOTO p ON h.HOUSE_NO = p.HOUSE_NO
+	    <where>
+	    	<if test="minValue != null">
+	    		AND RENT BETWEEN #{minValue} AND #{maxValue}
+	    	</if>
+	        <if test="genderDivisions != null">
+	            AND RES_GENDER IN
+	            <foreach item="gender" collection="genderDivisions" open="(" separator="," close=")">
+	                #{gender}
+	            </foreach>
+	        </if>
+	        <if test="houseType != null">
+	            AND RES_TYPE IN
+	            <foreach item="type" collection="houseType" open="(" separator="," close=")">
+	                #{type}
+	            </foreach>
+	        </if>
+	        <if test="maxResident != null">
+	        	AND ROOM_PEOPLE IN
+	        	<foreach item="roompeople" collection="maxResident" open="(" separator="," close=")">
+	                #{roompeople}
+	            </foreach>
+		    </if>
+	        <if test="floor != null">
+	            AND FLOOR IN
+	            <foreach item="flo" collection="floor" open="(" separator="," close=")">
+	                #{flo}
+	            </foreach>
+	        </if>
+	        <if test="openDate != null">
+				AND #{openDate} BETWEEN ENTER_DATE AND MAX_ENTER_DATE
+	   	 	</if>
+	   	 	AND p.FILE_LEVEL = 'Y'
+	   	 	AND h.HOUSE_STATUS = 'Y'
+	   	 	AND (h.ENROLL_STATUS = '등록완료' OR (h.ENROLL_STATUS = '심사완료' AND (h.AGE > 0 OR h.DEPOSIT = 0)))	 	
+	    </where>
+	    ORDER BY HOUSE_NO DESC
+	</select>
+		
+	<!-- 지역 정보 조회 서비스 -->
+	<select id="regionSelectList" resultMap="regionResultMap">
+		SELECT LATITUDE,
+				LONGITUDE
+		FROM REGION
+		WHERE REGION_NAME LIKE '%' || #{searchKeyword} || '%' AND ROWNUM = 1
+	</select>
+	
+	<!-- 예약 정보 입력 서비스 -->
+	<insert id="reservationInsert" parameterType="java.util.Map">
+		INSERT INTO RESERVATION(REZ_NO,
+								REZ_DATE,
+								REZ_HOUR,
+								SEND_MEMBER_ID,
+								REC_MEMBER_ID,
+								HOUSE_NO)
+		VALUES(SEQ_REZ_NO.NEXTVAL,	
+					#{rezDate},
+					#{rezHour},
+					#{sendMemberId},
+					#{recMemberId},
+					#{houseNo})					
+	</insert>
+	
+	<!-- 셰어하우스 별 예약 신청 리스트 갯수 -->
+	<select id="selectHouseRezListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM RESERVATION
+		WHERE HOUSE_NO = #{houseNo}
+		AND DEL_STATUS = 'N'
+	</select>
+	
+	<!-- 셰어하우스 별 예약 신청 리스트 -->
+	<select id="myHouseRezSelect" resultMap="reservationResultMap">
+		SELECT r.*, h.HOUSE_NAME, m.NICKNAME
+		FROM RESERVATION r
+		JOIN HOUSE h ON r.HOUSE_NO = h.HOUSE_NO
+		JOIN MEMBER m ON r.SEND_MEMBER_ID = m.MEMBER_ID
+			WHERE h.HOUSE_NO = #{houseNo}
+			AND r.DEL_STATUS = 'N'
+		 ORDER BY r.REZ_NO DESC
+	</select>	
+	
+	<!-- 예약번호에 따른 검색 -->
+	<select id="selectRezOne" resultMap="reservationResultMap">
+		SELECT *
+		FROM RESERVATION
+		WHERE REZ_NO = #{rezNo}
+		AND DEL_STATUS = 'N'
+	</select>
+	
+	<!-- 셰어하우스 예약 확정 -->
+	<update id="confirmRez" parameterType="_int">
+		UPDATE RESERVATION
+		SET REZ_STATUS = '예약확정'
+		WHERE REZ_NO = #{rezNo}
+	</update>
+	
+	<!-- 셰어하우스 예약 취소 -->	
+	<update id="rezCancel" parameterType="java.util.Map">
+		UPDATE RESERVATION
+		SET REZ_STATUS = '예약취소', CANCEL_CONTENT = #{cancelContent}
+		WHERE REZ_NO = #{rezNo}
+	</update>
+	
+	<!-- 멤버 이메일 불러오기 -->
+	<select id="memberEmail" parameterType="String" resultType="String">
+		SELECT EMAIL
+		FROM MEMBER
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+	
+	
+	<!-- 로그인유저의 셰어하우스 예약 체크 -->
+	<select id="rezChCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM RESERVATION
+		WHERE HOUSE_NO = #{hno}
+		AND SEND_MEMBER_ID = #{Id}
+		AND NOT REZ_STATUS = '예약취소'
+		AND DEL_STATUS = 'N'
+	</select>
+	
+	<!-- 로그인 유저의 예약번호 받아오기 -->
+	<select id="loginRno" resultType="_int">
+	SELECT REZ_NO
+	FROM RESERVATION
+		WHERE HOUSE_NO = #{hno}
+		AND SEND_MEMBER_ID = #{Id}
+		AND NOT REZ_STATUS = '예약취소'
+		AND DEL_STATUS = 'N'
+	</select>
+	
+	<!-- 중심좌표 셰어하우스 이름 키워드 검색  -->
+	<select id="keyCenterAd" resultMap="houseResultMap">
+		SELECT HOUSE_ADDRESS, LATITUDE, LONGITUDE
+		FROM HOUSE
+		WHERE HOUSE_NAME LIKE '%' || #{searchKeyword} || '%' AND ROWNUM = 1
+			  AND HOUSE_STATUS = 'Y'
+			  AND (ENROLL_STATUS = '등록완료' OR (ENROLL_STATUS = '심사완료' AND (AGE > 0 OR DEPOSIT = 0)))	 	
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="adminMemberMapper">
+
+	<!-- MEMBER 테이블로부터 조회된 ResultSet 에 들은 데이터를 Member VO 로 가공해주는 용도 -->
+	<resultMap id="adminMemberResultSet" type="member">
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="MEMBER_PWD" property="memberPwd" />
+		<result column="MEMBER_NAME" property="memberName" />
+		<result column="NICKNAME" property="nickName" />
+		<result column="PHONE" property="phone" />
+		<result column="EMAIL" property="email" />
+		<result column="GENDER" property="gender" />
+		<result column="AREA" property="area" />
+		<result column="BIRTH" property="birth" />
+		<result column="ENROLL_DATE" property="enrollDate" />
+		<result column="MODIFY_DATE" property="modifyDate" />
+		<result column="LOGIN_DATE" property="loginDate" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="STATUS" property="status" />
+		<result column="BLACKLIST_FLAG" property="blacklistFlag" />
+	</resultMap>
+	
+	<!-- 관리자 로그인 체크용 -->
+	<select id="checkAdminLogin" resultType="int">
+    	SELECT COUNT(*)
+		  FROM MEMBER_AUTH
+		 WHERE EMAIL=#{EMAIL}
+		   AND ADMIN_AUTH=1
+	</select>
+
+	<!-- 총 갯수 구하는 쿼리문 -->
+	<select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		  FROM MEMBER
+	</select>
+	
+	<!-- 리스트를 구해주는 쿼리문 -->
+	<select id="selectList" resultMap="adminMemberResultSet">
+		SELECT M.MEMBER_ID
+		     , M.MEMBER_NAME
+		     , M.NICKNAME
+		     , M.PHONE
+		     , M.EMAIL
+		     , M.GENDER
+		     , M.AREA
+		     , M.BIRTH
+		     , M.ENROLL_DATE
+		     , M.LOGIN_DATE
+		     , M.STATUS
+		     , CASE WHEN R.REPORT_COUNT >= 5 THEN 'BLACKLISTED' ELSE NULL END AS BLACKLIST_FLAG
+		  FROM MEMBER M
+		  LEFT JOIN (
+			    SELECT REPORT_ID, COUNT(*) AS REPORT_COUNT
+			    FROM REPORT R
+			    GROUP BY REPORT_ID
+			    HAVING COUNT(*) >= 5
+			) R ON M.MEMBER_ID = R.REPORT_ID
+		 ORDER BY M.ENROLL_DATE DESC
+	</select>
+	
+	<!-- 카테고리용 총 갯수 구하는 쿼리문 -->
+	<select id="selectCategoryListCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		  FROM MEMBER
+		 WHERE STATUS = #{category}
+	</select>
+	
+	<!-- 카테고리용 리스트를 구해주는 쿼리문 -->
+	<select id="selectCategoryList" parameterType="string" resultMap="adminMemberResultSet">
+         SELECT
+			    M.MEMBER_ID
+		     , M.MEMBER_NAME
+		     , M.NICKNAME
+		     , M.PHONE
+		     , M.EMAIL
+		     , M.GENDER
+		     , M.AREA
+		     , M.BIRTH
+		     , M.ENROLL_DATE
+		     , M.LOGIN_DATE
+		     , M.STATUS
+		     , CASE WHEN R.REPORT_COUNT >= 5 THEN 'BLACKLISTED' ELSE NULL END AS BLACKLIST_FLAG
+			FROM MEMBER M
+			LEFT JOIN (
+			    SELECT REPORT_ID, COUNT(*) AS REPORT_COUNT
+			    FROM REPORT R
+			    GROUP BY REPORT_ID
+			    HAVING COUNT(*) >= 5
+			) R ON M.MEMBER_ID = R.REPORT_ID
+			WHERE STATUS = #{category}   
+			ORDER BY M.ENROLL_DATE DESC
+	</select>
+	
+	<!-- 회원 상세 조회용 쿼리문 -->
+	<select id="selectMember" parameterType="string" resultMap="adminMemberResultSet">
+		SELECT MEMBER_ID
+			 , MEMBER_NAME
+			 , NICKNAME
+			 , PHONE
+			 , EMAIL
+			 , GENDER
+			 , AREA
+			 , BIRTH
+			 , ENROLL_DATE
+			 , MODIFY_DATE
+			 , LOGIN_DATE
+			 , CHANGE_NAME
+			 , STATUS
+		  FROM MEMBER
+		 WHERE MEMBER_ID = #{memberId}
+	</select>
+	
+	<!-- 회원 상세 - 카테고리별 총 갯수 구하는 쿼리문 -->
+	<select id="selectMemberCategoryListCount" parameterType="map" resultType="_int">
+		SELECT COUNT(*)
+		  FROM
+		<choose>
+			<when test='category == "house"'>
+				HOUSE
+			 </when>
+			<when test='category == "board"'>
+				BOARD
+			 </when>
+			 <when test='category == "find"'>
+				FIND
+			 </when>
+			 <when test='category == "inreview"'>
+				INREVIEW
+			 </when>
+			 <otherwise>
+			 	MEMBER
+			 </otherwise>
+		 </choose>
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+	<!-- 회원 상세 - 카테고리용(쉐어하우스) 리스트 구하는 쿼리문 -->
+	<select id="selectCategoryMember" parameterType="string" resultType="java.util.Map">
+		SELECT *
+		  FROM 
+		<if test='category == "house"'>
+			HOUSE
+		 </if>
+		<if test='category == "board"'>
+			BOARD
+		 </if>
+		 <if test='category == "find"'>
+			FIND
+		 </if>
+		 <if test='category == "inreview"'>
+			INREVIEW
+		 </if>
+		  JOIN MEMBER USING (MEMBER_ID)
+		 WHERE MEMBER_ID = #{memberId}
+		 <if test='category == "house"'>
+			ORDER BY HOUSE_NO DESC
+		 </if>
+		 <if test='category == "board"'>
+			ORDER BY BOARD_NO DESC
+		 </if>
+		 <if test='category == "find"'>
+			ORDER BY FIND_NO DESC
+		 </if>
+		 <if test='category == "inreview"'>
+			ORDER BY INR_NO DESC
+		 </if>
+	</select>
+
+	<!-- 탈퇴/일반용 쿼리문 -->
+	<update id="updateMemberStatus" parameterType="member">
+		UPDATE MEMBER
+		   SET STATUS = #{memberStatus}
+		 WHERE MEMBER_ID = #{memberId}
+	</update>
+	
+	<!-- 전체선택용 탈퇴용 쿼리문 -->
+	<update id="updateStatusAll" parameterType="hashMap">
+		UPDATE MEMBER
+		   SET STATUS = #{memberStatus}
+		 WHERE MEMBER_ID IN
+			 <foreach item="memberId" collection="idArray" open="(" separator="," close=")">
+		        #{memberId}
+		    </foreach>
+	</update>
+
+</mapper>

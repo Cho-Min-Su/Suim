@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="chatMapper">
+
+	<resultMap id="chatListResultMap" type="chatList">
+		<id column="CHAT_NO" property="chatNo" />
+		<result column="CUSER" property="cuser" />
+		<result column="MUSER" property="muser" />
+		<result column="C_DATE" property="cDate" />
+		<result column="STATUS" property="status" />
+	</resultMap>
+
+	<resultMap id="chatLogResultMap" type="chatlog">
+		<id column="CHAT_NO" property="chatNo" />
+		<result column="SEND_USER" property="sendUser" />
+		<result column="RECEIVE_USER" property="receiveUser" />
+		<result column="CONTENT" property="content" />
+		<result column="SEND_DATE" property="sendDate" />
+		<result column="STATUS" property="status" />
+		<result column="R_STATUS" property="rstatus" />
+	</resultMap>
+
+	<insert id="insertChat" parameterType="java.util.Map">
+		INSERT INTO CHAT_LIST
+		(CHAT_NO, CUSER, MUSER, C_DATE, STATUS)
+		VALUES
+		(SEQ_CNO.NEXTVAL, #{cuser}, #{muser}, SYSDATE, 'Y')
+	</insert>
+
+	<select id="selectIchat" parameterType="java.util.Map"
+		resultMap="chatListResultMap">
+		SELECT *
+		FROM CHAT_LIST
+		WHERE CHAT_NO = (SELECT MAX(CHAT_NO)
+		FROM CHAT_LIST WHERE CUSER = #{cuser}
+		AND MUSER = #{muser})
+		AND STATUS = 'Y'
+	</select>
+
+	<select id="selectChat" parameterType="java.lang.String"
+		resultMap="chatListResultMap">
+		SELECT *
+		FROM CHAT_LIST
+		WHERE CUSER = #{cuser}
+		AND STATUS = 'Y'
+	</select>
+
+	<select id="selectList" resultMap="chatListResultMap">
+		SELECT *
+		FROM CHAT_LIST
+		WHERE STATUS = 'Y'
+	</select>
+
+	<select id="selectOne" parameterType="java.lang.String"
+		resultMap="chatListResultMap">
+		SELECT *
+		FROM (
+		SELECT *
+		FROM CHAT_LIST
+		WHERE MUSER = #{muser}
+		OR CUSER = #{muser}
+		AND STATUS = 'Y'
+		ORDER BY CHAT_NO DESC
+		)
+		WHERE ROWNUM = 1
+	</select>
+
+	<insert id="saveChatLog" parameterType="chatlog">
+		INSERT INTO CHAT_LOG
+		(SEND_USER, RECEIVE_USER, CONTENT, SEND_DATE, CHAT_NO,
+		STATUS, R_STATUS)
+		VALUES
+		(#{sendUser}, #{receiveUser}, #{content}, DEFAULT, #{chatNo},
+		'Y', 'N')
+	</insert>
+
+	<select id="selectChatLog" parameterType="_int"
+		resultMap="chatLogResultMap">
+		SELECT *
+		FROM CHAT_LOG
+		WHERE CHAT_NO = #{rno}
+		ORDER BY SEND_DATE ASC
+	</select>
+	
+	 <select id="selectRead" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) AS COUNT
+		FROM CHAT_LOG
+		WHERE CHAT_NO = #{rno}
+		  AND RECEIVE_USER = #{Id}
+		  AND R_STATUS = 'N'
+    </select>
+    
+    <update id="setRead" parameterType="java.util.Map">
+	    UPDATE CHAT_LOG
+	    SET R_STATUS = 'Y'
+	    WHERE CHAT_NO = #{rno}
+	      AND RECEIVE_USER = #{Id}
+	      AND R_STATUS = 'N'
+	</update>
+	
+	<update id="deleteChat" parameterType="java.util.Map">
+    UPDATE CHAT_LIST
+    SET STATUS = 'N'
+    WHERE CHAT_NO = #{rno}
+</update>
+	
+</mapper>

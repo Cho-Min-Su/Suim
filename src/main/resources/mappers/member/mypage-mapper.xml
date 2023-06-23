@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="mypageMapper">
+
+	<resultMap id="boardResultSet" type="board">
+		<result column="BOARD_NO" property="boardNo" />
+		<result column="BOARD_TITLE" property="boardTitle" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="BOARD_VIEW" property="boardView" />
+		<result column="BOARD_DATE" property="boardDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="BOARD_CONTENT" property="boardContent" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="BOARD_REPLY_COUNT" property="replyCount" />
+	</resultMap>
+
+	<resultMap id="findResultSet" type="find">
+		<result column="FIND_NO" property="findNo" />
+		<result column="FIND_TITLE" property="findTitle" />
+		<result column="FIND_CATEGORY" property="category" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="FIND_VIEW" property="findView" />
+		<result column="FIND_DATE" property="findDate" />
+		<result column="ORIGIN_NAME" property="originName" />
+		<result column="FIND_CONTENT" property="findContent" />
+		<result column="CHANGE_NAME" property="changeName" />
+		<result column="FIND_REPLY_COUNT" property="freplyCount" />
+	</resultMap>
+	
+	<resultMap id="wishResultSet" type="myWish">
+		<result column="HOUSE_NO" property="houseNo" />
+		<result column="MEMBER_ID" property="memberId" />
+		<result column="HOUSE_WRITER" property="houseWriter" />
+		<result column="HOUSE_ADDRESS" property="houseAddress" />
+		<result column="HOUSE_NAME" property="houseName" />
+		<result column="RES_GENDER" property="resGender" />
+		<result column="DEPOSIT" property="deposit" />
+		<result column="RENT" property="rent" />
+		<result column="CHANGE_NAME" property="changeName" />
+	</resultMap>
+	
+	<resultMap id="inReviewResultSet" type="inreview">
+    <result column="INR_NO" property="inrNo" />
+    <result column="INR_TITLE" property="inrTitle" />
+    <result column="MEMBER_ID" property="memberId" />
+    <result column="INR_VIEW" property="inrView" />
+    <result column="INR_DATE" property="inrDate" />
+    <result column="ORIGIN_NAME" property="originName" />
+    <result column="NICKNAME" property="nickName" />
+    <result column="INR_CONTENT" property="inrContent" />
+    <result column="CHANGE_NAME" property="changeName" />
+    <result column="THUMBNAIL" property="thumbnail" />
+    <result column="INREVIEW_REPLY_COUNT" property="replyCount" />
+	</resultMap>
+	
+
+	
+	<!-- 내가쓴 셰어하우스 resultMap -->
+	<resultMap id="myHouseResultMap" type="house">
+	    <result column="HOUSE_NO" property="houseNo"/>
+	    <result column="HOUSE_NAME" property="houseName"/>
+	    <result column="HOUSE_ADDRESS" property="houseAddress"/>
+	    <result column="DEPOSIT" property="deposit"/>
+	    <result column="RENT" property="rent"/>
+	    <result column="ENTER_DATE" property="enterDate"/>
+	    <result column="MAX_ENTER_DATE"  property="maxEnterDate"/>
+	    <result column="MIN_STAY" property="minStay"/>
+	    <result column="MAX_STAY" property="maxStay"/>
+	    <result column="ROOM_PEOPLE" property="roomPeople"/>
+	    <result column="INC_FURNITURE" property="incFurniture"/>
+	    <result column="HOUSE_CONTENT" property="houseContent"/>
+	    <result column="RES_GENDER" property="resGender"/>
+	    <result column="RES_TYPE" property="resType"/>
+	    <result column="FLOOR" property="floor"/>
+	    <result column="HOUSE_STATUS" property="houseStatus"/>
+	    <result column="HOUSE_DATE" property="houseDate"/>
+	    <result column="MEMBER_ID" property="memberId"/>
+	   	<result column="CHANGE_NAME" property="changeName"/>
+	   	<result column="ENROLL_STATUS" property="enrollStatus"/>
+	</resultMap>
+	
+	<!-- 내가 예약한 셰어하우스 resultMap -->
+	<resultMap id="reservationResultMap" type="reservation">
+	    <result column="REZ_NO" property="rezNo"/>
+		<result column="REZ_DATE" property="rezDate"/>
+		<result column="REZ_HOUR" property="rezHour"/>
+		<result column="SEND_MEMBER_ID" property="sendMemberId"/>
+		<result column="REC_MEMBER_ID" property="recMemberId"/>
+		<result column="REZ_STATUS" property="rezStatus"/>
+		<result column="REZ_REQUEST_DATE" property="rezRequestDate"/>
+		<result column="CANCEL_CONTENT" property="cancelContent"/>
+		<result column="DEL_STATUS" property="delStatus"/>
+		<result column="HOUSE_NO" property="houseNo"/>
+		<result column="HOUSE_NAME" property="houseName"/>
+	</resultMap>
+	
+	<!-- 결제내역 resultMap -->
+		<resultMap id="payResultMap" type="pay">
+	    <result column="PAYMENT_NO" property="paymentNo"/>
+		<result column="TID" property="tid"/>
+		<result column="PRICE" property="price"/>
+		<result column="PAYMENT_DATE" property="paymentDate"/>
+		<result column="PAYMENT_STATUS" property="paymentStatus"/>
+		<result column="HOUSE_NO" property="houseNo"/>
+		<result column="PG_TOKEN" property="pgToken"/>
+		<result column="MEMBER_ID" property="memberId"/>
+		<result column="DEPOSIT" property="deposit"/>
+		<result column="HOUSE_NAME" property="houseName"/>
+	</resultMap>
+
+
+
+	<!-- 자유게시판 게시글 갯수 -->
+	<select id="selectBoardListCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM BOARD
+		WHERE STATUS = 'Y'
+		AND MEMBER_ID = #{memberId}
+	</select>
+
+	<!-- 게시글 리스트를 구해주는 쿼리문 -->
+	<select id="selectBoardList" parameterType="string" resultMap="boardResultSet">
+		SELECT B.BOARD_NO, COUNT(BR.BRE_NO) AS BOARD_REPLY_COUNT, B.BOARD_TITLE, B.BOARD_VIEW, B.BOARD_DATE
+		FROM BOARD B
+		LEFT JOIN BOARD_REPLY BR ON B.BOARD_NO = BR.BOARD_NO
+		WHERE B.MEMBER_ID = #{memberId}
+		AND B.STATUS = 'Y'
+		GROUP BY B.BOARD_NO, B.BOARD_TITLE, B.BOARD_VIEW, B.BOARD_DATE
+
+		ORDER BY B.BOARD_DATE DESC
+
+	</select>
+
+	<select id="selectFindListCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM FIND
+		WHERE STATUS = 'Y'
+		AND MEMBER_ID = #{memberId}
+	</select>
+
+
+	<!-- 게시글 리스트를 구해주는 쿼리문 -->
+	<select id="selectFindList" resultMap="findResultSet">
+		SELECT F.FIND_NO, COUNT(FR.FRE_NO) AS FIND_REPLY_COUNT, F.FIND_TITLE, F.FIND_VIEW, F.FIND_DATE
+		FROM FIND F
+		LEFT JOIN FIND_REPLY FR ON F.FIND_NO = FR.FIND_NO
+		WHERE F.MEMBER_ID = #{memberId}
+		AND F.STATUS = 'Y'
+		GROUP BY F.FIND_NO, F.FIND_TITLE, F.FIND_VIEW, F.FIND_DATE
+
+		ORDER BY F.FIND_DATE DESC
+
+	</select>
+	
+	
+	<select id="selectInreviewCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM FIND
+		WHERE STATUS = 'Y'
+		AND MEMBER_ID = #{memberId}
+	</select>
+
+
+	<!-- 게시글 리스트를 구해주는 쿼리문 -->
+	<select id="selectInreviewList" resultMap="inReviewResultSet">
+		SELECT I.INR_NO, COUNT(IR.IRE_NO) AS INREVIEW_REPLY_COUNT, I.INR_TITLE, I.INR_VIEW, I.INR_DATE
+		FROM INREVIEW I
+		LEFT JOIN INREVIEW_REPLY IR ON I.INR_NO = IR.INR_NO
+		WHERE I.MEMBER_ID = #{memberId}
+		AND I.STATUS = 'Y'
+		GROUP BY I.INR_NO, I.INR_TITLE, I.INR_VIEW, I.INR_DATE
+
+		ORDER BY I.INR_DATE DESC
+	</select>
+	
+	
+	
+	
+	
+	<update id="deleteBoard" parameterType="hashMap">
+	    UPDATE BOARD
+	    SET STATUS = 'N'
+	    WHERE BOARD_NO IN
+	    <foreach item="boardNo" collection="intArray" open="(" separator="," close=")">
+	        #{boardNo}
+	    </foreach>
+	    AND MEMBER_ID = #{memberId}
+	</update>
+	
+	<update id="deleteFind" parameterType="hashMap">
+	    UPDATE FIND
+	    SET STATUS = 'N'
+	    WHERE FIND_NO IN
+	    <foreach item="findNo" collection="intArray" open="(" separator="," close=")">
+	        #{findNo}
+	    </foreach>
+	    AND MEMBER_ID = #{memberId}
+	</update>
+	
+	<update id="deleteInreview" parameterType="hashMap">
+	    UPDATE INREVIEW
+	    SET STATUS = 'N'
+	    WHERE INR_NO IN
+	    <foreach item="inrNo" collection="intArray" open="(" separator="," close=")">
+	        #{inrNo}
+	    </foreach>
+	    AND MEMBER_ID = #{memberId}
+	</update>
+
+
+
+	<select id="selectWishListCount" parameterType="string" resultType="_int">
+		SELECT COUNT(*) FROM WISH W
+		JOIN HOUSE H USING (HOUSE_NO)
+		JOIN PHOTO P USING (HOUSE_NO)  
+		WHERE H.HOUSE_STATUS = 'Y'   
+		AND W.MEMBER_ID = #{memberId}
+		AND P.FILE_LEVEL = 'Y'
+	</select>
+
+
+	<select id="selectWishList" parameterType="string" resultMap="wishResultSet">
+		SELECT HOUSE_NO, W.MEMBER_ID, H.MEMBER_ID AS "HOUSE_WRITER", HOUSE_ADDRESS, HOUSE_NAME, RES_GENDER, DEPOSIT, RENT, CHANGE_NAME FROM WISH W
+		JOIN HOUSE H USING (HOUSE_NO)
+		JOIN PHOTO P USING (HOUSE_NO)  
+		WHERE H.HOUSE_STATUS = 'Y'   
+		AND W.MEMBER_ID = #{memberId}
+		AND P.FILE_LEVEL = 'Y'
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+	<!-- 내가 쓴 셰어하우스 리스트 갯수 구하는 쿼리문 -->
+	<select id="selectHouseListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM HOUSE
+		WHERE HOUSE_STATUS = 'Y'
+		AND MEMBER_ID = #{memberId}
+	</select>
+
+	<!-- 내가 쓴 셰어하우스 리스트 select 쿼리문 -->
+	<select id="selectHouseList" resultMap="myHouseResultMap">
+	   SELECT h.HOUSE_NO, h.HOUSE_NAME, h.HOUSE_ADDRESS, h.DEPOSIT, h.RENT, h.ENTER_DATE, h.MAX_ENTER_DATE, h.MIN_STAY, h.MAX_STAY, h.ROOM_PEOPLE, h.INC_FURNITURE, h.HOUSE_CONTENT, h.RES_GENDER, h.RES_TYPE, h.FLOOR, h.HOUSE_STATUS, h.HOUSE_DATE, h.MEMBER_ID, p.CHANGE_NAME
+	   , h.ENROLL_STATUS, h.AGE 
+	    FROM HOUSE h
+	    JOIN PHOTO p ON h.HOUSE_NO = p.HOUSE_NO
+	    WHERE h.HOUSE_STATUS = 'Y'
+		AND h.MEMBER_ID = #{memberId}
+	   	AND p.FILE_LEVEL = 'Y'
+	    ORDER BY HOUSE_NO DESC
+	</select>
+	
+	<!-- 내가 예약한 셰어하우스 리스트 갯수 구하는 쿼리문 -->
+	<select id="selectRezListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM RESERVATION
+		WHERE DEL_STATUS = 'N'
+		AND SEND_MEMBER_ID = #{memberId}
+	</select>
+	
+	<!-- 내가 예약한 셰어하우스 리스트 조회하는 쿼리문 -->
+	<select id="selectRezList" resultMap="reservationResultMap">
+	   SELECT r.*, h.HOUSE_NAME 
+		FROM RESERVATION r
+		JOIN HOUSE h ON r.HOUSE_NO = h.HOUSE_NO
+			WHERE r.SEND_MEMBER_ID = #{memberId}
+			AND r.DEL_STATUS = 'N'
+		 ORDER BY r.REZ_NO DESC
+	</select>
+	
+		<!-- 결제내역 리스트 갯수 구하는 쿼리문 -->
+	<select id="selectPayListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM PAYMENT
+		WHERE PAYMENT_STATUS IN ('Y' , 'N')
+		AND MEMBER_ID = #{memberId}
+	</select>
+	
+		<select id="selectPayList" resultMap="payResultMap">
+	   SELECT p.PAYMENT_NO,
+              p.TID,
+              p.PRICE,
+              p.PAYMENT_DATE,
+              p.PAYMENT_STATUS,
+              p.HOUSE_NO,
+              m.MEMBER_ID,
+              h.HOUSE_NAME
+		FROM PAYMENT p
+		JOIN HOUSE h ON (p.HOUSE_NO = h.HOUSE_NO)
+        JOIN MEMBER m ON (m.MEMBER_ID = p.MEMBER_ID)
+			WHERE p.MEMBER_ID = #{memberId}
+			AND p.PAYMENT_STATUS IN ('Y','N')
+		 ORDER BY p.PAYMENT_NO DESC
+	</select>
+	
+	<select id="selectAlarmCheck" parameterType="String" resultType="int">
+	SELECT SET_ALARM
+	FROM MEMBER_AUTH
+	WHERE EMAIL = #{email}
+	</select>
+
+
+
+	<update id="updateAlarmCheck" parameterType="String">
+	UPDATE MEMBER_AUTH
+	SET SET_ALARM = CASE
+	    WHEN SET_ALARM = 0 THEN 1
+	    WHEN SET_ALARM = 1 THEN 0
+	    ELSE SET_ALARM
+	    END
+	WHERE EMAIL = #{email}
+	</update>
+
+
+
+</mapper>
